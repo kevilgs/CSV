@@ -58,5 +58,6 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
+        <finalName>csv-converter</finalName>
     </build>
 </project>
