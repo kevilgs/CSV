@@ -1,0 +1,12 @@
+# render.yaml - Add this file to your project root
+services:
+  - type: web
+    name: railway-csv-converter
+    env: java
+    buildCommand: mvn clean package -DskipTests
+    startCommand: java -jar target/csv-converter.jar
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: JAVA_OPTS
+        value: "-Xmx512m"
