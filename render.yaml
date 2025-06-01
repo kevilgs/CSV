@@ -1,0 +1,11 @@
+# render.yaml
+services:
+  - type: web
+    name: railway-csv-converter
+    env: docker
+    dockerfilePath: ./dockerfile
+    plan: free
+    region: ohio
+    envVars:
+      - key: PORT
+        value: 8080
