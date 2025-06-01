@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>CSV to Excel Converter</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 650px;
+            width: 100%;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 35px 70px rgba(0, 0, 0, 0.25);
+        }
+
+        h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #4a5568;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .upload-area {
+            border: 3px dashed #cbd5e0;
+            border-radius: 15px;
+            padding: 50px 30px;
+            margin: 30px 0;
+            background: linear-gradient(145deg, #f7fafc, #edf2f7);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+            border-radius: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: linear-gradient(145deg, #ffffff, #f7fafc);
+            transform: translateY(-2px);
+        }
+
+        .upload-area:hover::before {
+            opacity: 1;
+        }
+
+        .upload-area.file-selected {
+            border-color: #48bb78;
+            background: linear-gradient(145deg, #f0fff4, #e6fffa);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #a0aec0;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            color: #667eea;
+            transform: scale(1.1);
+        }
+
+        .upload-area.file-selected .upload-icon {
+            color: #48bb78;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .file-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .main-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .main-button:hover::before {
+            left: 100%;
+        }
+
+        .main-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .main-button:disabled {
+            background: linear-gradient(135deg, #a0aec0 0%, #cbd5e0 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 5px 15px rgba(160, 174, 192, 0.2);
+        }
+
+        .main-button:disabled:hover {
+            transform: none;
+            box-shadow: 0 5px 15px rgba(160, 174, 192, 0.2);
+        }
+
+        .messages {
+            margin-top: 25px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(72, 187, 120, 0.3);
+            animation: slideInUp 0.5s ease;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(245, 101, 101, 0.3);
+            animation: slideInUp 0.5s ease;
+        }
+
+        .info-message {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(66, 153, 225, 0.3);
+            animation: slideInUp 0.5s ease;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 3% auto;
+            padding: 40px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            animation: slideInDown 0.3s ease;
+        }
+
+        .modal-header {
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .modal-header h2 {
+            color: #2d3748;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .close {
+            position: absolute;
+            right: 0;
+            top: 0;
+            color: #a0aec0;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close:hover {
+            color: #667eea;
+            transform: rotate(90deg);
+        }
+
+        .classification-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(145deg, #f7fafc, #edf2f7);
+            border-radius: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .classification-row:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.1);
+        }
+
+        .classification-row input {
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .classification-row input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .category-input {
+            width: 180px;
+            font-weight: 600;
+        }
+
+        .wagon-types-input {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .remove-btn {
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 101, 101, 0.3);
+        }
+
+        .add-more-btn {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .add-more-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(72, 187, 120, 0.3);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .cancel-btn {
+            background: linear-gradient(135deg, #a0aec0, #718096);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .cancel-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(160, 174, 192, 0.3);
+        }
+
+        .example-text {
+            color: #718096;
+            font-style: italic;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        /* Loading Animation */
+        .loading {
+            position: relative;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .upload-area {
+                padding: 40px 20px;
+            }
+
+            .classification-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .category-input,
+            .wagon-types-input {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚂 Railway CSV Converter</h1>
+        <p class="subtitle">Transform your railway data into beautifully formatted Excel reports with intelligent wagon classifications and zone-based organization.</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <input type="file" name="file" id="csvFile" accept=".csv" required class="file-input">
+            <button type="button" id="checkClassificationBtn" class="main-button" disabled>
+                ✨ Check Classifications & Generate Report
+            </button>
+        </div>
+        
+        <div id="messages" class="messages"></div>
+    </div>
+
+    <!-- Classification Modal -->
+    <div id="classificationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <h2>🏷️ Wagon Classification Setup</h2>
+            </div>
+            
+            <p><strong>Do you need to add any new wagon classifications?</strong></p>
+            <p class="example-text">
+                <strong>💡 Example:</strong> Category "JUMBO" with wagon types "BCN,BCNHL,BCNM"
+            </p>
+            
+            <div id="classificationContainer">
+                <!-- Dynamic classification rows will be added here -->
+            </div>
+            
+            <button type="button" class="add-more-btn" id="addMoreBtn">➕ Add Classification</button>
+            
+            <div class="modal-buttons">
+                <button type="button" class="cancel-btn" id="cancelBtn">🚀 No, Proceed Directly</button>
+                <button type="button" class="main-button" id="saveAndContinueBtn">💾 Save & Generate Report</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const csvFile = document.getElementById('csvFile');
+        const checkBtn = document.getElementById('checkClassificationBtn');
+        const uploadArea = document.getElementById('uploadArea');
+        const modal = document.getElementById('classificationModal');
+        const closeBtn = document.querySelector('.close');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const saveBtn = document.getElementById('saveAndContinueBtn');
+        const addMoreBtn = document.getElementById('addMoreBtn');
+        const classificationContainer = document.getElementById('classificationContainer');
+        const messagesDiv = document.getElementById('messages');
+        
+        // Enable button and update UI when file is selected
+        csvFile.addEventListener('change', function() {
+            const hasFile = this.files.length > 0;
+            checkBtn.disabled = !hasFile;
+            
+            if (hasFile) {
+                uploadArea.classList.add('file-selected');
+                uploadArea.querySelector('.upload-icon').textContent = '✅';
+                checkBtn.innerHTML = '✨ Generate Excel Reports for "' + this.files[0].name + '"';
+            } else {
+                uploadArea.classList.remove('file-selected');
+                uploadArea.querySelector('.upload-icon').textContent = '📁';
+                checkBtn.innerHTML = '✨ Check Classifications & Generate Report';
+            }
+        });
+        
+        // Show modal when button is clicked
+        checkBtn.addEventListener('click', function() {
+            if (!csvFile.files.length) {
+                showMessage('⚠️ Please select a CSV file first!', 'error');
+                return;
+            }
+            modal.style.display = 'block';
+            addClassificationRow(); // Add one empty row by default
+        });
+        
+        // Close modal handlers
+        closeBtn.addEventListener('click', () => modal.style.display = 'none');
+        cancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+            proceedWithConversion();
+        });
+        
+        // Add new classification row
+        addMoreBtn.addEventListener('click', addClassificationRow);
+        
+        // Save classifications and proceed
+        saveBtn.addEventListener('click', function() {
+            const classifications = getClassificationsFromForm();
+            if (classifications.length > 0) {
+                saveClassifications(classifications);
+            } else {
+                modal.style.display = 'none';
+                proceedWithConversion();
+            }
+        });
+        
+        function addClassificationRow() {
+            const row = document.createElement('div');
+            row.className = 'classification-row';
+            row.innerHTML = `
+                <input type="text" class="category-input" placeholder="Category (e.g., JUMBO)" />
+                <input type="text" class="wagon-types-input" placeholder="Wagon Types (e.g., BCN,BCNHL,BCNM)" />
+                <button type="button" class="remove-btn" onclick="removeRow(this)">🗑️ Remove</button>
+            `;
+            classificationContainer.appendChild(row);
+        }
+        
+        function removeRow(btn) {
+            btn.parentElement.remove();
+        }
+        
+        function getClassificationsFromForm() {
+            const rows = classificationContainer.querySelectorAll('.classification-row');
+            const classifications = [];
+            
+            rows.forEach(row => {
+                const category = row.querySelector('.category-input').value.trim();
+                const wagonTypes = row.querySelector('.wagon-types-input').value.trim();
+                
+                if (category && wagonTypes) {
+                    classifications.push({
+                        category: category.toUpperCase(),
+                        wagonTypes: wagonTypes.split(',').map(type => type.trim().toUpperCase()).filter(type => type)
+                    });
+                }
+            });
+            
+            return classifications;
+        }
+        
+        function saveClassifications(classifications) {
+            showMessage('💾 Saving new classifications...', 'info');
+            
+            fetch('/api/classifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(classifications)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('✅ Classifications saved successfully!', 'success');
+                    modal.style.display = 'none';
+                    setTimeout(() => proceedWithConversion(), 1000);
+                } else {
+                    showMessage('❌ Error saving classifications: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('❌ Error saving classifications: ' + error.message, 'error');
+            });
+        }
+        
+        function proceedWithConversion() {
+            const file = csvFile.files[0];
+            if (!file) {
+                showMessage('⚠️ Please select a CSV file first!', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Show loading with button animation
+            checkBtn.classList.add('loading');
+            checkBtn.disabled = true;
+            checkBtn.innerHTML = '⏳ Processing your CSV file...';
+            showMessage('🔄 Processing CSV and generating Excel files...', 'info');
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                checkBtn.classList.remove('loading');
+                checkBtn.disabled = false;
+                checkBtn.innerHTML = '✨ Generate Another Report';
+                
+                if (data.error) {
+                    showMessage('❌ Error: ' + data.message, 'error');
+                } else if (data.intermediateExcel && data.finalExcel) {
+                    // Download intermediate 10-column Excel FIRST
+                    downloadFile(data.intermediateExcel, data.intermediateFileName);
+                    
+                    // Download final formatted Excel (with a small delay)
+                    setTimeout(() => {
+                        downloadFile(data.finalExcel, data.finalFileName);
+                    }, 1500);
+                    
+                    showMessage(
+                        '🎉 <strong>Success!</strong> Two Excel files downloaded:<br><br>' +
+                        '📊 <strong>' + data.intermediateFileName + '</strong><br>' +
+                        '<small>10-column raw data sorted by zones</small><br><br>' +
+                        '📋 <strong>' + data.finalFileName + '</strong><br>' +
+                        '<small>Beautiful formatted report with classifications</small><br><br>' +
+                        '📈 <strong>' + data.dataRows + ' data rows</strong> processed successfully!', 
+                        'success'
+                    );
+                } else {
+                    showMessage('❌ Unexpected response format', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                checkBtn.classList.remove('loading');
+                checkBtn.disabled = false;
+                checkBtn.innerHTML = '✨ Check Classifications & Generate Report';
+                showMessage('❌ Network error: ' + error.message, 'error');
+            });
+        }
+        
+        function downloadFile(base64Data, filename) {
+            try {
+                const byteCharacters = atob(base64Data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+                
+                console.log('✅ Downloaded: ' + filename);
+            } catch (error) {
+                console.error('❌ Download error for ' + filename + ':', error);
+            }
+        }
+        
+        function showMessage(message, type) {
+            messagesDiv.innerHTML = `<div class="${type}-message">${message}</div>`;
+            
+            if (type === 'info') {
+                setTimeout(() => {
+                    if (messagesDiv.querySelector('.info-message')) {
+                        messagesDiv.innerHTML = '';
+                    }
+                }, 10000);
+            }
+        }
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Add drag and drop functionality
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#667eea';
+            this.style.background = 'linear-gradient(145deg, #ffffff, #f7fafc)';
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#cbd5e0';
+            this.style.background = 'linear-gradient(145deg, #f7fafc, #edf2f7)';
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#cbd5e0';
+            this.style.background = 'linear-gradient(145deg, #f7fafc, #edf2f7)';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].name.toLowerCase().endsWith('.csv')) {
+                csvFile.files = files;
+                csvFile.dispatchEvent(new Event('change'));
+            } else {
+                showMessage('⚠️ Please drop a valid CSV file!', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
