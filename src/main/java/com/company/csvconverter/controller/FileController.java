@@ -2,7 +2,6 @@ package com.company.csvconverter.controller;
 
 import com.company.csvconverter.service.DataProcessingService;
 import com.company.csvconverter.service.ExcelWriterService;
-import com.company.csvconverter.service.ExcelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
@@ -23,8 +22,6 @@ import java.util.Map;
 @Controller
 public class FileController {
     
-    @Autowired
-    private ExcelService excelService; // Keep for backwards compatibility
     
     @Autowired
     private DataProcessingService dataProcessingService; // NEW: For 10-column processing

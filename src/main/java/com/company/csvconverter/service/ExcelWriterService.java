@@ -309,7 +309,6 @@ private Map<String, StationData> groupDataByIcSttn(List<String[]> classifiedData
         String[] row = classifiedData.get(i);
         
         // Extract data from the 10 columns
-        String zoneTo = row[0];                           // ZONE TO (NEW)
         String icSttn = row[1];                           // IC STTN
         String handedOverSttn = row[2];                   // HANDED OVER STTN TO
         String handedOverLE = row[3];                     // HANDED OVER L/E
